@@ -2,6 +2,8 @@
 import sqlite3
 import os
 
+"""N0TE: FOR WHATEVER REASON THE 2ND STATEMENT CAUSES THIS TO RUN SLOWLY. WAIT JUST A FEW MINUTES."""
+
 # DB_FILEPATH = 'rpg_db.sqlite3'
 DB_FILEPATH = os.path.join(os.path.dirname(__file__), 'rpg_db.sqlite3')
 
@@ -46,35 +48,68 @@ print(result)
 
 
 # How many of the Items are weapons? How many are not?
-# WEAPONS
 sql = """
 SELECT
-    COUNT(DISTINCT item_ptr_id) AS Weapons
+    COUNT(DISTINCT item_ptr_id) AS Weapons,
+    (COUNT(DISTINCT item_id) - COUNT(DISTINCT item_ptr_id)) AS NonWeapons
 FROM armory_item
 LEFT JOIN armory_weapon ON armory_item.item_id = armory_weapon.item_ptr_id
 """
 result = curs.execute(sql).fetchall()
 print(result)
 
-# NONWEAPONS
+
+# How many Items does each character have? (Return first 20 rows)
 sql = """
 SELECT
-    COUNT(DISTINCT item_id) AS NonWeapons
-FROM armory_item
-LEFT JOIN armory_weapon ON armory_item.item_id = armory_weapon.item_ptr_id
-WHERE item_ptr_id IS NULL
+	character_id,
+   COUNT(*) AS NumberOfItems
+FROM charactercreator_character_inventory
+GROUP BY character_id
+ORDER BY character_id
+LIMIT 20
 """
 result = curs.execute(sql).fetchall()
 print(result)
 
 
-
-
-
-
+# How many Weapons does each character have? (Return first 20 rows)
+sql = """
+SELECT
+	character_id,
+	COUNT(item_ptr_id) AS NumberOfWeapons
+FROM charactercreator_character_inventory
+LEFT JOIN armory_weapon ON charactercreator_character_inventory.item_id = armory_weapon.item_ptr_id
+GROUP BY character_id
+ORDER BY item_ptr_id
+LIMIT 20
 """
-How many Items does each character have? (Return first 20 rows)
-How many Weapons does each character have? (Return first 20 rows)
-On average, how many Items does each Character have?
-On average, how many Weapons does each character have?
+result = curs.execute(sql).fetchall()
+print(result)
+
+
+# On average, how many Items does each Character have?
+sql = """
+SELECT AVG(NumberOfItems) FROM
+	(SELECT
+		COUNT() AS NumberOfItems
+		FROM charactercreator_character_inventory
+		GROUP BY character_id
+		ORDER BY character_id)
 """
+result = curs.execute(sql).fetchall()
+print(result)
+
+
+# On average, how many Weapons does each character have?
+sql = """
+SELECT AVG(NumberOfWeapons) FROM
+	(SELECT
+		COUNT(item_ptr_id) AS NumberOfWeapons
+		FROM charactercreator_character_inventory
+		LEFT JOIN armory_weapon ON charactercreator_character_inventory.item_id = armory_weapon.item_ptr_id
+		GROUP BY character_id
+		ORDER BY item_ptr_id)
+"""
+result = curs.execute(sql).fetchall()
+print(result)
